@@ -30,6 +30,8 @@ class MocktrofitPlugin implements Plugin<Project> {
         def root = project.getProjectDir().getAbsolutePath();
         def fs = FileSystems.getDefault();
 
+        def processed = []
+
         project.extensions.create("mocktrofit", MocktrofitPlugin)
         project.afterEvaluate {
             def variants = project.android.hasProperty('applicationVariants') ?
@@ -40,18 +42,18 @@ class MocktrofitPlugin implements Plugin<Project> {
                 def tname = "rename${variant.getName().capitalize()}Mocks"
                 def task = project.tasks.create(name: tname) << { 
                     Path srcPath =  fs.getPath(variant.mergeAssets.getOutputDir().toString())
-                    moveAssets(fs, srcPath)
+                    moveAssets(fs, srcPath, processed)
                 }
                 variant.getMergeAssets().finalizedBy task 
             }
         }
     }
 
-    private void moveAssets(FileSystem fs, Path path) {
+    private void moveAssets(FileSystem fs, Path path, processed) {
         Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                moveFile(fs, file);
+                moveFile(fs, file, path.toString(), processed);
                 return FileVisitResult.CONTINUE;
             }
 
@@ -66,10 +68,20 @@ class MocktrofitPlugin implements Plugin<Project> {
             });
     }
 
-    private static void moveFile(FileSystem fs, Path file) {
+    private static void moveFile(FileSystem fs, Path file, String root, List processed) {
         if (file.getFileName().toString().endsWith(".http")) {
-            Path newPath = fs.getPath(file.getParent().toString(), encrypt(file.getFileName().toString()))
-            Files.move(file, newPath)
+            
+            String name = file.getFileName().toString().replaceAll("\\.http", "")
+            Path newPath = fs.getPath(file.getParent().toString(), encrypt(name) + ".http")
+
+            String key = fs.getPath(file.getParent().toString(), name + ".http").toString();
+            key = key.replaceAll(root, "");
+
+            println(key + " - " + processed.contains(key))
+            if (!processed.contains(key)) {
+                Files.move(file, newPath)
+                processed.add(newPath.toString().replaceAll(root, ""));
+            }
         }
     }
 
