@@ -5,7 +5,6 @@ import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.ProjectConfigurationException
-
 import groovy.json.*
 
 import java.io.File;
@@ -22,7 +21,9 @@ import java.security.*;
 import javax.inject.Inject
 
 class MocktrofitPlugin implements Plugin<Project> {
+
     Project project;
+
     void apply(Project project) {
 
         this.project = project
@@ -77,7 +78,6 @@ class MocktrofitPlugin implements Plugin<Project> {
             String key = fs.getPath(file.getParent().toString(), name + ".http").toString();
             key = key.replaceAll(root, "");
 
-            println(key + " - " + processed.contains(key))
             if (!processed.contains(key)) {
                 Files.move(file, newPath)
                 processed.add(newPath.toString().replaceAll(root, ""));
